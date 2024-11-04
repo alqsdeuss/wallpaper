@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wallpaper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background: #000;
+            color: #e0e0e0;
+            overflow: hidden;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+        .spotlight {
+            font-size: 2.8em;
+            font-weight: bold;
+            color: transparent;
+            background: linear-gradient(90deg, transparent, #c4c4c4, transparent);
+            background-size: 200% 200%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            animation: spotlightMove 2s ease-in-out infinite alternate;
+            margin: 20px 0;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s ease-out forwards;
+            animation-delay: 0.6s;
+        }
+        .button {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            text-decoration: none; 
+            color: #ffffff;
+        }
+        .button-desktop {
+            background-color: #636464;
+        }
+        .button-phone {
+            background-color: #636464;
+        }
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .wallpaper-display {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #fff;
+            width: 100%;
+            height: auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: #ffffff;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+        img {
+            max-width: 100%;
+            max-height: 50vh;
+            display: none;
+            border-radius: 10px;
+        }
+        .action-buttons {
+            margin-top: 20px;
+            display: none;
+        }
+        @keyframes spotlightMove {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media screen and (max-width: 747px) {
+            .spotlight {
+                font-size: 2em;
+            }
+            .button {
+                padding: 40px 100px;
+                font-size: 0.9em;
+            }
+            img {
+                max-height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="spotlight">Generate Wallpaper</h1>
+        <div class="button-container">
+            <button class="button button-desktop" id="desktop">desktop</button>
+            <button class="button button-phone" id="phone">phone</button>
+        </div>
+        <div class="wallpaper-display" id="wallpaperDisplay">
+            <span class="loading-text" id="loadingText">loading...</span>
+            <img id="wallpaperImage" src="" alt="Generated Wallpaper">
+        </div>
+        <div class="action-buttons">
+            <button class="button button-desktop" id="backButton">back</button>
+            <button class="button button-phone" id="saveButton">save</button>
+        </div>
+    </div>
+
+    <script>
+        let currentWallpaperUrl = '';
+
+        document.getElementById('desktop').onclick = function() {
+            generateWallpaper('desktop');
+        };
+        
+        document.getElementById('phone').onclick = function() {
+            generateWallpaper('phone');
+        };
+
+        document.getElementById('backButton').onclick = function() {
+            showSelection();
+        };
+
+        document.getElementById('saveButton').onclick = function() {
+            if (currentWallpaperUrl) {
+                const link = document.createElement('a');
+                link.href = currentWallpaperUrl;
+                link.download = 'oka.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+        function generateWallpaper(device) {
+            const display = document.getElementById('wallpaperDisplay');
+            const loadingText = document.getElementById('loadingText');
+            loadingText.style.opacity = '1';
+            display.style.display = 'flex';
+            
+            fetch(`/api/wallpapers?device=${device}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(wallpapers => {
+                    const randomWallpaper = wallpapers[Math.floor(Math.random() * wallpapers.length)];
+                    currentWallpaperUrl = randomWallpaper.url;
+                    const image = document.getElementById('wallpaperImage');
+                    image.src = randomWallpaper.url;
+                    image.style.display = 'block';
+                    image.onload = function() {
+                        loadingText.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingText.style.display = 'none';
+                        }, 1000);
+                    };
+                    display.style.opacity = '1';
+                    document.querySelector('.button-container').style.display = 'none';
+                    document.querySelector('.action-buttons').style.display = 'flex';
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    loadingText.innerText = 'Failed to load wallpapers.';
+                });
+        }
+
+        function showSelection() {
+            document.getElementById('wallpaperDisplay').style.display = 'flex';
+            document.querySelector('.button-container').style.display = 'flex'; 
+            document.querySelector('.action-buttons').style.display = 'none'; 
+            currentWallpaperUrl = ''; 
+            document.getElementById('loadingText').style.opacity = '0'; 
+            document.getElementById('wallpaperImage').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
